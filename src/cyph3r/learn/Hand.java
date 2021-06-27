@@ -97,7 +97,7 @@ public class Hand {
 		}
 	}
 
-	public String toString() {f
+	public String toString() {
 		System.out.println(this.hand);//todo: testing
 		StringBuilder toReturn = new StringBuilder();
 		Card[] cards = this.getHandAsArray();
