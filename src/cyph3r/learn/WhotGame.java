@@ -67,7 +67,7 @@ public class WhotGame {
 
 	public static void main(String[] args) {
 		WhotGame e = new WhotGame(2, 5, 1, true);
-		e.startGame();
+//		e.startGame();
 	}
 
 	private void dealCurrentPlayerCard(int times) {
