@@ -55,6 +55,8 @@ public class WhotGame {
 		}
 		this.playerTurn = this.players.get(0);
 
+
+
 	}
 
 	public static boolean compareCardsByNumber(Card card1, Card card2) {
