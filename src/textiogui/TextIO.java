@@ -1097,6 +1097,7 @@ public class TextIO {
 				int y1 = MARGIN + (lineCount - 1 - topLine) * lineSkip + fontMetrics.getAscent() + fontMetrics.getDescent();
 				int y2 = y1 - fontMetrics.getAscent() - fontMetrics.getDescent();
 				g.drawLine(x, y1, x, y2);
+
 				g.drawLine(x + 1, y1, x + 1, y2);
 			}
 		}
