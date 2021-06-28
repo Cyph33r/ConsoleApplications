@@ -2,7 +2,7 @@ package cyph3r.learn;
 
 import java.util.ArrayList;
 
-public class Practice implements Runnable {
+public class Practice{
 
 	public static void main(String[] args) {
 		Practice ke = new Practice();
