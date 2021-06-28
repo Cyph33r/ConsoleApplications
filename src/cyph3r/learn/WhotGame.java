@@ -173,7 +173,7 @@ public class WhotGame {
 	}
 
 	private void processPlay() {
-		String message = String.format("         ROUND %2$d    \n%1$s it's your turn to play.", this.playerTurn.getName(), this.roundCount);//todo: Ensure this works well. Ensure this only prints at the end of a round
+		String message = String.format("%1$s it's your turn to play.", this.playerTurn.getName(), this.roundCount);//todo: Ensure this works well. Ensure this only prints at the end of a round
 		if (pickTwo > 0)
 			message += "\nYou have been asked to pick " + pickTwo + " .Enter m to yield or card index to defend(Value must be 2)";
 		while (true) {

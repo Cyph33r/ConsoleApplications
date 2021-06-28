@@ -2,7 +2,7 @@ package cyph3r.learn;
 
 import java.util.ArrayList;
 
-public class Practice{
+public class Practice {
 
 	public static void main(String[] args) {
 		Practice ke = new Practice();
@@ -19,21 +19,12 @@ public class Practice{
 //
 //			Integer[] t = new Integer[] {};
 		String er = "d";
-		String t[] = er.split("ddddddddd");
+		String[] t = er.split("d");
 		System.out.println("'" + t[0] + "'");
 
 	}
 
 
-	public static int adder(Practice function, int num_a, int num_b) {
-		return function.add(num_a, num_b);
 
-	}
-
-
-	@Override
-	public int add(int a, int b) {
-		return a + b;
-	}
 
 }
