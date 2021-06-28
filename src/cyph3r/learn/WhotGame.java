@@ -18,7 +18,8 @@ public class WhotGame {
 	private int playerTurnIndex = 0;
 	private int roundCount = 0;
 	private boolean gameOver = false;
-	private shape iNeed;
+	private ArrayList<Object> iNeed;
+
 
 	public WhotGame(int playerNum, int initCardNum, int numOfPacks, boolean tenderEnabled) {
 		String welcomeMessage = ""; //todo: Fill this in the game intro later
@@ -31,6 +32,7 @@ public class WhotGame {
 			throw new IllegalArgumentException("Not enough players to start a game");
 		this.tenderEnabled = tenderEnabled;
 		shape[] theShapes = Card.shape.values();
+		iNeed = new ArrayList<>();
 		for (int packNumber = 0; packNumber < numOfPacks; ++packNumber) {
 			for (shape theShape : theShapes) {
 				if (theShape == shape.WHOT)
@@ -54,7 +56,6 @@ public class WhotGame {
 				dealPlayerCard(this.players.get(i), 1);
 		}
 		this.playerTurn = this.players.get(0);
-
 
 
 	}
@@ -141,27 +142,26 @@ public class WhotGame {
 
 	}
 
-	private Card[] validatePlay(Card[] cards) {
-		Card previousCard;
-		if (cards.length == 1 && pickTwo == 0)
+	private Card[] validatePlay(Card[] cards) {//todo: try to simplify this method later
+		Card previousCard = this.topCard;
+		if (cards[0].getShape() == shape.WHOT)
+			return null;
+		else if (iNeed.size() > 0)
+			if (cards[0].getShape() == iNeed.get(1)) {
+				this.iNeed.clear();
+				return null;
+			} else
+				return new Card[]{cards[0], null};
+		else if (cards.length == 1 && pickTwo == 0)
 			if (compareCardsByShape(cards[0], this.topCard))
 				return null;
 		int count = 0;
 		for (Card card : cards) {
-			previousCard = cards[count];
-			if (count == 0) {
-				if (!(compareCardsByNumber(this.topCard, card)))
-					return new Card[]{card, this.topCard};
-				if (this.topCard.getValue() == 0 && this.roundCount == 0) {
-					count++;
-					continue;
-				}
-			} else {
-				if (!(compareCardsByNumber(previousCard, card)))
-					return new Card[]{card, previousCard};
-			}
-			++count;
+			if (!(compareCardsByNumber(previousCard, card)))
+				return new Card[]{card, previousCard};
+			previousCard = cards[count++];
 		}
+
 		return null;
 	}
 
@@ -173,7 +173,9 @@ public class WhotGame {
 	}
 
 	private void processPlay() {
-		String message = String.format("%1$s it's your turn to play.", this.playerTurn.getName(), this.roundCount);//todo: Ensure this works well. Ensure this only prints at the end of a round
+		String message = String.format("%1$s it's your turn to play.", this.playerTurn.getName(), this.roundCount);
+		if (iNeed.size() > 0)
+			message = String.format("%1$s needs a %2$s. Play a card of %2$s shape or go to market.", ((WhotPlayer) this.iNeed.get(0)).getName(), this.iNeed.get(1));
 		if (pickTwo > 0)
 			message += "\nYou have been asked to pick " + pickTwo + " .Enter m to yield or card index to defend(Value must be 2)";
 		while (true) {
@@ -248,25 +250,35 @@ public class WhotGame {
 							}
 							switch (input) {
 								case 'b':
-									iNeed = shape.BOX;
+									iNeed.add(this.playerTurn);
+									iNeed.add(shape.BOX);
 									break;
 								case 'c':
-									iNeed = shape.CIRCLE;
+									iNeed.add(this.playerTurn);
+									iNeed.add(shape.CIRCLE);
 									break;
 								case 'r':
-									iNeed = shape.CROSS;
+									iNeed.add(this.playerTurn);
+									iNeed.add(shape.CROSS);
 									break;
 								case 's':
-									iNeed = shape.STAR;
+									iNeed.add(this.playerTurn);
+									iNeed.add(shape.STAR);
 									break;
-								default: // input == 't
-									iNeed = shape.TRIANGLE;
+								case 't':
+									iNeed.add(this.playerTurn);
+									iNeed.add(shape.TRIANGLE);
 									break;
 							}
 							break;
 					}
 				} else {
-					message = String.format("You can't play a %1$s on a %2$s", process[0], process[1]);
+
+
+					if (iNeed.isEmpty())
+						message = String.format("You can't play a %1$s on a %2$s", process[0], process[1]);
+					else
+						message = String.format("%1$s needs a %2$s. Play a card of %2$s shape or go to market.", ((WhotPlayer) this.iNeed.get(0)).getName(), this.iNeed.get(1));
 				}
 			}
 		}

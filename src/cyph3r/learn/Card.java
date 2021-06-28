@@ -20,7 +20,7 @@ public class Card {
 		else if (cardValue > 0 && cardValue < 15)
 			this.cardValue = cardValue;
 		else
-			throw new IllegalStateException("Invalid card value entered: " + cardValue);
+			throw new IllegalArgumentException("Invalid card value entered: " + cardValue);
 	}
 
 	public shape getShapeAsEnum() {
