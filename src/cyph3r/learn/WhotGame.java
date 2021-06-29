@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-//todo: Check all String variables and print statements and ensure that they all end without a new line.
+//todo: Clean up all output.
+// fixme: modify for case in which whot is the first card
+
 public class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
 	private final boolean tenderEnabled;
@@ -69,11 +71,6 @@ public class WhotGame {
 		return card1.getShape() == card2.getShape();
 	}
 
-	public static void main(String[] args) {
-		WhotGame e = new WhotGame(2, 5, 1, true);
-//		e.startGame();
-	}
-
 	private void dealCurrentPlayerCard(int times) {
 		this.dealPlayerCard(this.playerTurn, times);
 	}
@@ -98,9 +95,9 @@ public class WhotGame {
 		this.addCardsToDeckFromPlayer(new Card[]{card});
 	}
 
-	private void addCardsToDeckFromPlayer(Card[] cards) {// good
+	private void addCardsToDeckFromPlayer(Card[] cards) {
 		for (Card card : cards) {
-			this.market.receiveCard(card);
+			this.deck.receiveCard(card);
 			this.topCard = card;
 		}
 	}
@@ -117,9 +114,9 @@ public class WhotGame {
 
 	private void updatePlayerTurn() {
 		++this.playerTurnIndex;
+		this.roundCount++;
 		if (this.playerTurnIndex >= this.players.size()) {
 			this.playerTurnIndex = 0;
-			this.roundCount++;
 		}
 		this.playerTurn = this.players.get(playerTurnIndex);
 	}
@@ -142,9 +139,9 @@ public class WhotGame {
 
 	}
 
-	private Card[] validatePlay(Card[] cards) {//todo: try to simplify this method later
+	private Card[] validatePlay(Card[] cards) {
 		Card previousCard = this.topCard;
-		if (cards[0].getShape() == shape.WHOT)
+		if (cards[0].getShape() == shape.WHOT || (this.topCard.getShape() == shape.WHOT && this.roundCount == 0))
 			return null;
 		else if (iNeed.size() > 0)
 			if (cards[0].getShape() == iNeed.get(1)) {
@@ -173,9 +170,10 @@ public class WhotGame {
 	}
 
 	private void processPlay() {
-		String message = String.format("%1$s it's your turn to play.", this.playerTurn.getName(), this.roundCount);
+		String message = String.format("%s it's your turn to play.", this.playerTurn.getName());
+		System.out.println(iNeed.size()); // todo: remove this later
 		if (iNeed.size() > 0)
-			message = String.format("%1$s needs a %2$s. Play a card of %2$s shape or go to market.", ((WhotPlayer) this.iNeed.get(0)).getName(), this.iNeed.get(1));
+			message += String.format("\n%1$s needs a %2$s. Play a card of %2$s shape or go to market.", ((WhotPlayer) this.iNeed.get(0)).getName(), this.iNeed.get(1));
 		if (pickTwo > 0)
 			message += "\nYou have been asked to pick " + pickTwo + " .Enter m to yield or card index to defend(Value must be 2)";
 		while (true) {
@@ -270,15 +268,18 @@ public class WhotGame {
 									iNeed.add(shape.TRIANGLE);
 									break;
 							}
-							break;
+							return;
 					}
 				} else {
 
 
 					if (iNeed.isEmpty())
 						message = String.format("You can't play a %1$s on a %2$s", process[0], process[1]);
-					else
-						message = String.format("%1$s needs a %2$s. Play a card of %2$s shape or go to market.", ((WhotPlayer) this.iNeed.get(0)).getName(), this.iNeed.get(1));
+					else {
+						String name = this.playerTurn == iNeed.get(0) ? "you needed" : iNeed.get(0).toString() + "needs";
+						message = String.format("You can't play a %1$s.\n%2$s a %3$s. Play a card of %3$s shape or" +
+								" go to market.", process[0], name, this.iNeed.get(1));
+					}
 				}
 			}
 		}

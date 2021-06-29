@@ -1,7 +1,5 @@
 package cyph3r.learn;
 
-import cyph3r.learn.Card.shape;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,21 +21,6 @@ public class Hand {
 		for (Card card : cards) {
 			receiveCard(card);
 		}
-	}
-
-	public static void main(String[] args) {
-		Hand red = new Hand();
-		// red.receiveCard(new Card(shape.BOX, 3));
-		red.receiveCard(new Card(shape.CIRCLE, 2));
-		red.receiveCard(new Card(shape.WHOT, 6));
-		red.receiveCard(new Card(shape.CROSS, 5));
-		red.receiveCard(new Card(shape.BOX, 4));
-		System.out.println(red.getHandAsString());
-		red.sortByShape();
-		System.out.println(red.getHandAsString());
-		red.sortByValue();
-		System.out.println(red.getHandAsString());
-		System.out.println(red);
 	}
 
 	public int getHandSize() {
@@ -102,7 +85,7 @@ public class Hand {
 		StringBuilder toReturn = new StringBuilder();
 		Card[] cards = this.getHandAsArray();
 		for (int i = 1; i < cards.length + 1; i++) {
-			toReturn.append(String.format("%1$-30s", ("[" + i + "]" + (cards[i - 1].toString()))));//todo: fix this problem with order
+			toReturn.append(String.format("%1$-30s", ("[" + i + "]" + (cards[i - 1].toString()))));
 			if (i % 2 == 0 && i != cards.length)
 				toReturn.append("\n");
 		}

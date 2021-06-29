@@ -24,6 +24,11 @@ public class WhotPlayer {
 		this.hand = new Hand(hand);
 	}
 
+	@Override
+	public String toString() {
+		return this.getName();
+	}
+
 	public String getName() {
 		return this.name;
 	}
