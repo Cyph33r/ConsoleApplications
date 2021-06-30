@@ -192,6 +192,7 @@ public class WhotGame {
 				return;
 			} else {
 				Card[] process = this.validate(playerMove);
+				
 				if (process == null) {
 					Card playCard = null;
 					for (int i : playerMove) {
