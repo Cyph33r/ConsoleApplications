@@ -1,4 +1,4 @@
-package cyph3r.game.whot;
+package textio;
 
 // This is an exact copy of the regular TextIO.java, except that it has been placed
 // into a package named textio.

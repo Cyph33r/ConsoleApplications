@@ -1,6 +1,7 @@
 package cyph3r.game.whot;
 
 import cyph3r.game.whot.Card.shape;
+import textio.TextIO;
 
 import java.util.ArrayList;
 import java.util.Arrays;

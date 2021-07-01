@@ -1,5 +1,7 @@
 package cyph3r.game.whot;
 
+import textio.TextIO;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 
