@@ -15,11 +15,11 @@ public class StringUtil {
 	final static Random gen = new Random();
 
 	public static void main(String[] args) {
-		System.out.println(toTitlecase("fg wh thr why"));
+		System.out.println(toTitleCase("fg\t wh\nthr why"));
 //		System.out.println(Character.toTitleCase('s'));
 	}
 
-	public static String toTitlecase(String word) {
+	public static String toTitleCase(String word) {
 		StringBuilder toReturn = new StringBuilder();
 		boolean seenWhitespace = true;
 		for (int i = 0; i < word.length(); i++) {

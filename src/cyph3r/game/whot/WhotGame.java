@@ -56,7 +56,7 @@ public class WhotGame {
 		for (int i = 0; i < playerNum; ++i) {
 			System.out.print("Player " + (i + 1) + " enter your name: ");
 			String name = TextIO.getlnWord();
-			this.players.add(new WhotPlayer(StringUtil.toTitlecase(name)));
+			this.players.add(new WhotPlayer(StringUtil.toTitleCase(name)));
 
 			for (int j = 0; j < initCardNum; ++j)
 				dealPlayerCard(this.players.get(i), 1);
@@ -179,13 +179,14 @@ public class WhotGame {
 		while (true) {
 			int[] playerMove = this.playerTurn.playAsHuman(this.topCard, this.players.size(),
 					this.market.getHandSize(), tenderEnabled, message);
-			System.out.println(Arrays.toString(playerMove));//todo: testing
+			if (Tester.testing)
+				System.out.println(Arrays.toString(playerMove));//todo: testing
 			if (playerMove[0] == 0) {
 				if (pickTwo == 0) {
 					System.out.println(this.playerTurn.getName() + " goes to market.");
 					this.dealCurrentPlayerCard(1);
 				} else {
-					System.out.printf("%s picks %s", this.playerTurn.getName(), this.pickTwo);
+					System.out.printf("%s picks %s\n", this.playerTurn.getName(), this.pickTwo);
 					this.dealCurrentPlayerCard(pickTwo);
 					pickTwo = 0;
 				}
@@ -288,6 +289,10 @@ public class WhotGame {
 	void startGame() {
 		while (!this.gameOver) {
 			processPlay();
+			for (int i = 0; i < 45; i++) {
+				System.out.println("=");
+
+			}
 			this.updatePlayerTurn();
 			//continue;
 		}
