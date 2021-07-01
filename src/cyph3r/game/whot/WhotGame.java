@@ -1,6 +1,7 @@
 package cyph3r.game.whot;
 
 import cyph3r.game.whot.Card.shape;
+import cyph3r.myutils.StringUtil;
 import textio.TextIO;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class WhotGame {
 		for (int i = 0; i < playerNum; ++i) {
 			System.out.print("Player " + (i + 1) + " enter your name: ");
 			String name = TextIO.getlnWord();
-			this.players.add(new WhotPlayer(name));
+			this.players.add(new WhotPlayer(StringUtil.toTitlecase(name)));
 
 			for (int j = 0; j < initCardNum; ++j)
 				dealPlayerCard(this.players.get(i), 1);
