@@ -20,7 +20,7 @@ public class EncryptFile {
 		int[] d = new int[bytes.length];
 		for (int i = 0; i < d.length; i++) {
 			d[i] = Byte.toUnsignedInt(bytes[i]);
-			d[i] <<= 1;
+			d[i] <<= 0;
 		}
 		System.out.println(Arrays.toString(d));
 		System.out.println(bytes.length);

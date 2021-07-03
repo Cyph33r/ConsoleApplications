@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 //todo: Clean up all output.
-
+//fixme: Resolve why pick two can't be blocked with a card of value two
 public class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
 	private final boolean tenderEnabled;
@@ -20,7 +20,6 @@ public class WhotGame {
 	private WhotPlayer playerTurn;
 	private int playerTurnIndex = 0;
 	private int roundCount = 0;
-	private boolean gameOver = false;
 	private ArrayList<Object> iNeed;
 
 
@@ -108,6 +107,10 @@ public class WhotGame {
 	}
 
 	private void updatePlayerTurn() {
+		if (this.playerTurn.handEmpty()) {
+			this.gameOver();
+			return;
+		}
 		++this.playerTurnIndex;
 		this.roundCount++;
 		if (this.playerTurnIndex >= this.players.size()) {
@@ -167,21 +170,20 @@ public class WhotGame {
 	}
 
 	private void processPlay() {
-		String message = String.format("%s it's your turn to play.", this.playerTurn.getName());
+		StringBuilder message = new StringBuilder(String.format("%s it's your turn to play.\n", this.playerTurn.getName()));
 		if (Tester.testing)
-			System.out.println(iNeed.size()); // todo: remove this later
+			System.out.println(iNeed.size()); // todo: testing
 		if (iNeed.size() > 0) {
 			StringBuilder name = this.playerTurn == iNeed.get(0) ? new StringBuilder("You needed ") : new StringBuilder(iNeed.get(0).toString() + " needs ");
-			message = name.append(this.iNeed.get(1)).toString();
+			message.append(name.append(this.iNeed.get(1)).toString());
 		}
 		if (pickTwo > 0)
-			message += "\nYou have been asked to pick " + pickTwo + ". Enter m to yield or card index to defend(Value must be 2)";
+			message.append("\nYou have been asked to pick ").append(pickTwo).append(". Enter m to yield or card index to defend(Value must be 2)");
 		while (true) {
-			int[] playerMove = this.playerTurn.playAsHuman(this.topCard, this.players.size(),
-					this.market.getHandSize(), tenderEnabled, message);
+			int[] playerMove = this.playerTurn.playAsHuman(this.topCard, this.market.getHandSize(), message.toString());
 			if (Tester.testing)
 				System.out.println(Arrays.toString(playerMove));//todo: testing
-			if (playerMove[0] == 0) {
+			if (playerMove[0] == -1) {
 				if (pickTwo == 0) {
 					System.out.println(this.playerTurn.getName() + " goes to market.");
 					this.dealCurrentPlayerCard(1);
@@ -190,6 +192,7 @@ public class WhotGame {
 					this.dealCurrentPlayerCard(pickTwo);
 					pickTwo = 0;
 				}
+				System.out.println();
 				return;
 			} else {
 				Card[] process = this.validate(playerMove);
@@ -199,8 +202,11 @@ public class WhotGame {
 						playCard = this.playerTurn.dealCard(i);
 						this.addCardToDeckFromPlayer(playCard);
 					}
-					if (pickTwo > 0 && (playCard.getValue() != 2 || playCard.getValue() != 20)) {
-						message = String.format("You can't block a pick to with a %s", playCard);
+
+
+					if (pickTwo > 0 && playCard.getValue() != 2 && playCard.getValue() != 20) {
+						message.delete(0, message.length());
+						message = new StringBuilder(String.format("You can't block a pick to with a %s", playCard));
 						continue;
 					}
 					switch (playCard.getValue()) {
@@ -216,85 +222,92 @@ public class WhotGame {
 						case 13:
 							return;
 						case 1:
-							message = "Play your continue...";
+							message.delete(0, message.length());
+							message = new StringBuilder("Play your continue...");
 							continue;
 						case 2:
-							pickTwo = 2 * playerMove.length;
+							pickTwo += 2 * playerMove.length;
 							return;
 						case 8:
-							int playerIndex = this.playerTurnIndex;
 							for (int i = 0; i < playerMove.length - 1; ++i) {
 								this.updatePlayerTurn();
-								if (this.playerTurnIndex == playerIndex)
-									this.updatePlayerTurn();
 								System.out.printf("%s suspension!!!", this.playerTurn.getName());
 							}
-							message = "Play your continue";
+							message.delete(0, message.length());
+							message = new StringBuilder("Play your continue");
 							continue;
 						case 14:
-							for (int i = 0; i < playerMove.length; i++) {//todo: add continue routine
+							for (int i = 0; i < playerMove.length; i++) {
 								System.out.println("General Market everyone!!!");
 								this.generalMarket();
 							}
-							message = "Play your continue";
+							message.delete(0, message.length());
+							message = new StringBuilder("Play your continue");
 							continue;
 						case 20:
-							System.out.println("What do you need");
+							System.out.println("Your cards are:");
+							System.out.println(this.playerTurn.hand);
+							System.out.println("What do you need...");
 							System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 							char input = Character.toLowerCase(TextIO.getlnChar());
-							while (!(input == 'b' || input == 'c' || input == 'r' || input == 's' || input == 't')) {
+							while (!(input == 'b' || input == 'c' || input == 'r' || input == 's' || input == 't' || input == '1' || input == '2' || input == '3' || input == '4' || input == '5')) {
 								System.out.println("Wrong input let's try that again.");
 								System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 								input = Character.toLowerCase(TextIO.getlnChar());
 							}
 							switch (input) {
+								case '1':
 								case 'b':
 									iNeed.add(this.playerTurn);
 									iNeed.add(shape.BOX);
 									break;
+								case '2':
 								case 'c':
 									iNeed.add(this.playerTurn);
 									iNeed.add(shape.CIRCLE);
 									break;
+								case '3':
 								case 'r':
 									iNeed.add(this.playerTurn);
 									iNeed.add(shape.CROSS);
 									break;
+								case '4':
 								case 's':
 									iNeed.add(this.playerTurn);
 									iNeed.add(shape.STAR);
 									break;
+								case '5':
 								case 't':
 									iNeed.add(this.playerTurn);
 									iNeed.add(shape.TRIANGLE);
 									break;
 							}
+							System.out.println();
 							return;
 					}
 				} else {
 
-
+					message.delete(0, message.length());
 					if (iNeed.isEmpty())
-						message = String.format("You can't play a %1$s on a %2$s", process[0], process[1]);
+						message = new StringBuilder(String.format("You can't play a %1$s on a %2$s", process[0], process[1]));
 					else {
 						String name = this.playerTurn == iNeed.get(0) ? "you needed" : iNeed.get(0).toString() + " needs";
-						message = String.format("You can't play a %1$s.\n%2$s a %3$s. Play a card of %3$s shape or" +
-								" go to market.", process[0], name, this.iNeed.get(1));
+						message = new StringBuilder(String.format("You can't play a %1$s.\n%2$s a %3$s. Play a card of %3$s shape or go to market.", process[0], name, this.iNeed.get(1)));
 					}
 				}
 			}
 		}
 	}
 
-	void startGame() {
-		while (!this.gameOver) {
-			processPlay();
-			for (int i = 0; i < 45; i++) {
-				System.out.println("=");
+	void gameOver() {
+		System.out.println("Haha the game is over");
+		System.exit(0);
+	}
 
-			}
+	void startGame() {
+		while (true) {
+			processPlay();
 			this.updatePlayerTurn();
-			//continue;
 		}
 	}
 
