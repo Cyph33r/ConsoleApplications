@@ -64,6 +64,7 @@ public class WhotPlayer {
 		HashSet<Integer> toCheck = new HashSet<>();
 		ArrayList<Integer> indexToReturn = new ArrayList<>();
 		boolean exit = false;
+		this.hand.shuffleHand();
 		System.out.println(this.hand);
 		System.out.println();
 		System.out.println(message);

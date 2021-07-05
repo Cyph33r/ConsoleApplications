@@ -9,7 +9,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 //todo: Clean up all output.
-//fixme: Resolve why pick two can't be blocked with a card of value two
+//todo: Sort player hand before printing(shape or size)
+//fixme: Fix the multi-carding functionality.
+
 public class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
 	private final boolean tenderEnabled;
@@ -23,10 +25,10 @@ public class WhotGame {
 	private ArrayList<Object> iNeed;
 
 
-	public WhotGame(int playerNum, int initCardNum, int numOfPacks, boolean tenderEnabled) {
-		String welcomeMessage = ""; //todo: Fill in the game intro later
-		String loadingCompleteMessage = ""; //todo: Fill this in later too
-		System.out.println(welcomeMessage);
+	WhotGame(int playerNum, int initCardNum, int numOfPacks, boolean tenderEnabled) {
+		String welcomeMsg = ""; //todo: Fill in the game intro later
+		String loadingCompleteMsg = ""; //todo: Fill this in later too
+		System.out.println(welcomeMsg);
 		if (numOfPacks <= 0 || (playerNum * initCardNum > (int) (0.75 * numOfPacks * 75))) // Ensures that the number of
 			// cards to be distributed is not more than 75% of the total cards available
 			throw new IllegalArgumentException("Not enough cards in market to share");
@@ -35,20 +37,21 @@ public class WhotGame {
 		if (playerNum < 2)
 			throw new IllegalArgumentException("Not enough players to start a game");
 		this.tenderEnabled = tenderEnabled;
-		shape[] theShapes = Card.shape.values();
 		iNeed = new ArrayList<>();
 		for (int packNumber = 0; packNumber < numOfPacks; ++packNumber) {
-			for (shape theShape : theShapes) {
+			for (shape theShape : Card.shape.values()) {
 				if (theShape == shape.WHOT)
 					continue;
 				for (int cardValue = 1; cardValue <= 14; ++cardValue) {
 					this.market.receiveCard(new Card(theShape, cardValue));
 				}
 			}
-			for (int whotNumber = 0; whotNumber <= 4; ++whotNumber)
+			for (int whotNumber = 0; whotNumber < 5; ++whotNumber)
 				this.market.receiveCard(new Card());
 		}
-		this.market.shuffleHand();
+		for (int i = 0; i < 2; ++i)
+			this.market.shuffleHand();
+
 		if (Tester.testing)
 			System.out.println(this.market); //todo: Remove this after testing
 		this.addCardToDeckFromMarket();
@@ -61,7 +64,7 @@ public class WhotGame {
 				dealPlayerCard(this.players.get(i), 1);
 		}
 		this.playerTurn = this.players.get(0);
-		System.out.println(loadingCompleteMessage);
+		System.out.println(loadingCompleteMsg);
 	}
 
 
@@ -83,6 +86,7 @@ public class WhotGame {
 	private void resetDeck() {
 		Card[] underDeck = this.deck.playCards(0, this.deck.getHandSize() - 1);
 		this.market.receiveCards(underDeck);
+		this.market.shuffleHand();
 	}
 
 	private void addCardToDeckFromPlayer(Card card) {
@@ -95,7 +99,6 @@ public class WhotGame {
 			this.topCard = card;
 		}
 	}
-	//todo: ensure that the pick 2 method doesn't break the game
 
 	private void generalMarket() {
 		for (WhotPlayer player : this.players) {
@@ -133,15 +136,16 @@ public class WhotGame {
 	}
 
 	private void printScoreBoard() {
-		System.out.println(toString());
+		System.out.println(this.toString());
 
 	}
 
 	private Card[] validatePlay(Card[] cards) {
 		Card previousCard = this.topCard;
-		if (cards[0].getShape() == shape.WHOT || (this.topCard.getShape() == shape.WHOT && this.roundCount == 0))
+		if (cards[0].getShape() == shape.WHOT || (this.topCard.getShape() == shape.WHOT && this.roundCount == 0)) {
+			this.pickTwo = 0;
 			return null;
-		else if (iNeed.size() > 0)
+		} else if (iNeed.size() > 0)
 			if (cards[0].getShape() == iNeed.get(1)) {
 				this.iNeed.clear();
 				return null;
@@ -152,7 +156,7 @@ public class WhotGame {
 				return null;
 		int count = 0;
 		for (Card card : cards) {
-			if (Card.compareCardsByNumber(previousCard, card) || (count == 0 && Card.compareCardsByShape(previousCard, card))) {
+			if (Card.compareCardsByNumber(previousCard, card) || (count == 0 && Card.compareCardsByShape(previousCard, card))) {//fixme: ??
 				previousCard = cards[count++];
 				continue;
 			}
@@ -178,7 +182,7 @@ public class WhotGame {
 			message.append(name.append(this.iNeed.get(1)).toString());
 		}
 		if (pickTwo > 0)
-			message.append("\nYou have been asked to pick ").append(pickTwo).append(". Enter m to yield or card index to defend(Value must be 2)");
+			message.append("\nYou have been asked to pick ").append(pickTwo).append(". Enter m to yield or card index to defend(Value must be 2 or WHOT)");
 		while (true) {
 			int[] playerMove = this.playerTurn.playAsHuman(this.topCard, this.market.getHandSize(), message.toString());
 			if (Tester.testing)
@@ -198,12 +202,13 @@ public class WhotGame {
 				Card[] process = this.validate(playerMove);
 				if (process == null) {
 					Card playCard = null;
-					for (int i : playerMove) {
-						playCard = this.playerTurn.dealCard(i);
+					int index = 0;
+					for (int i = 0; i < playerMove.length; i++) {
+//						if (i != 0 && playerMove[i] < playerMove[i - 1])
+//							index = playerMove[i] - i;
+						playCard = this.playerTurn.dealCard(playerMove[index]);
 						this.addCardToDeckFromPlayer(playCard);
 					}
-
-
 					if (pickTwo > 0 && playCard.getValue() != 2 && playCard.getValue() != 20) {
 						message.delete(0, message.length());
 						message = new StringBuilder(String.format("You can't block a pick to with a %s", playCard));
@@ -312,12 +317,9 @@ public class WhotGame {
 	}
 
 	static class SortPlayersByScore implements Comparator<WhotPlayer> {
-
 		@Override
 		public int compare(WhotPlayer player1, WhotPlayer player2) {
 			return player1.getPlayerScore() - player2.getPlayerScore();
 		}
-
 	}
-
 }

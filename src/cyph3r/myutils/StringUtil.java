@@ -28,7 +28,7 @@ public class StringUtil {
 				if (seenWhitespace)
 					toReturn.append(Character.toTitleCase(character));
 				else
-					toReturn.append(character);
+					toReturn.append(Character.toLowerCase(character));
 				seenWhitespace = false;
 
 				continue;

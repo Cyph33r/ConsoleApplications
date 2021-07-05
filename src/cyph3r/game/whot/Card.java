@@ -44,6 +44,7 @@ public class Card {
 		return this.cardShape;
 	}
 
+	@Override
 	public String toString() {
 		if (this.cardShape == Card.shape.WHOT)
 			return this.cardShape.toString() + " " + this.cardValue;
