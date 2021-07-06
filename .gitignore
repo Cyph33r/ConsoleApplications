@@ -5,3 +5,5 @@ out/
 .project
 
 /Console Applications.iml
+/logs/log.txt
+logs/
