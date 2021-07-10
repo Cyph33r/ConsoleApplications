@@ -7,12 +7,15 @@ import textio.TextIO;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 
 //todo: Clean up all output.
-//todo: Sort player hand before printing(shape or size)
+//todo: Add last and semi card message
 //fixme: Fix the multi-carding functionality.
+//todo: add playerTurn variable as an int containing last card value
+//todo: add contains method in Hand class
 
-public class WhotGame {
+class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
 	private final boolean tenderEnabled;
 	private int pickTwo = 0;
@@ -22,7 +25,9 @@ public class WhotGame {
 	private WhotPlayer playerTurn;
 	private int playerTurnIndex = 0;
 	private int roundCount = 0;
+	private final int numOfPacks;
 	private ArrayList<Object> iNeed;
+	private HashMap<String, Object> ineed;//mark: can I use this instead an ArrayList???
 
 
 	WhotGame(int playerNum, int initCardNum, int numOfPacks, boolean tenderEnabled) {
@@ -38,6 +43,21 @@ public class WhotGame {
 			throw new IllegalArgumentException("Not enough players to start a game");
 		this.tenderEnabled = tenderEnabled;
 		iNeed = new ArrayList<>();
+		this.numOfPacks = numOfPacks;
+		this.populateMarket();
+		for (int i = 0; i < playerNum; ++i) {
+			System.out.print("Player " + (i + 1) + " enter your name: ");
+			String name = TextIO.getlnWord();
+			this.players.add(new WhotPlayer(StringUtil.toTitleCase(name)));
+
+			for (int j = 0; j < initCardNum; ++j)
+				dealPlayerCard(this.players.get(i), 1);
+		}
+		this.playerTurn = this.players.get(0);
+		System.out.println(loadingCompleteMsg);
+	}
+
+	private void populateMarket() {
 		for (int packNumber = 0; packNumber < numOfPacks; ++packNumber) {
 			for (shape theShape : Card.shape.values()) {
 				if (theShape == shape.WHOT)
@@ -51,22 +71,8 @@ public class WhotGame {
 		}
 		for (int i = 0; i < 2; ++i)
 			this.market.shuffleHand();
-
-		if (Tester.testing)
-			System.out.println(this.market); //todo: Remove this after testing
 		this.addCardToDeckFromMarket();
-		for (int i = 0; i < playerNum; ++i) {
-			System.out.print("Player " + (i + 1) + " enter your name: ");
-			String name = TextIO.getlnWord();
-			this.players.add(new WhotPlayer(StringUtil.toTitleCase(name)));
-
-			for (int j = 0; j < initCardNum; ++j)
-				dealPlayerCard(this.players.get(i), 1);
-		}
-		this.playerTurn = this.players.get(0);
-		System.out.println(loadingCompleteMsg);
 	}
-
 
 	private void dealCurrentPlayerCard(int times) {
 		this.dealPlayerCard(this.playerTurn, times);
@@ -74,30 +80,28 @@ public class WhotGame {
 
 	private void dealPlayerCard(WhotPlayer player, int times) {
 		for (int i = 0; i < times; ++i)
-			player.receiveCard(this.market.playCard());
+			player.receiveCard(this.market.dealCard());
 	}
 
 	private void addCardToDeckFromMarket() {
-		Card card = this.market.playCard();
+		Card card = this.market.dealCard();
 		this.topCard = card;
 		this.deck.receiveCard(card);
 	}
 
-	private void resetDeck() {
-		Card[] underDeck = this.deck.playCards(0, this.deck.getHandSize() - 1);
+	private void resetDeck() {//todo: ensure this works as is supposed to
+		Card[] underDeck = this.deck.dealCards(0, this.deck.getHandSize() - 2);
+		if (underDeck.length == 0) {
+			System.out.println("There are no more cards left in the market.");
+			gameOver();
+		}
 		this.market.receiveCards(underDeck);
 		this.market.shuffleHand();
 	}
 
-	private void addCardToDeckFromPlayer(Card card) {
-		this.addCardsToDeckFromPlayer(new Card[]{card});
-	}
-
-	private void addCardsToDeckFromPlayer(Card[] cards) {
-		for (Card card : cards) {
-			this.deck.receiveCard(card);
-			this.topCard = card;
-		}
+	private void addCardsToDeckFromPlayer() {
+		this.deck.receiveCards(this.playerTurn.flushOutgoingCards());
+		this.topCard = deck.peek(this.deck.getHandSize() - 1);
 	}
 
 	private void generalMarket() {
@@ -110,21 +114,23 @@ public class WhotGame {
 	}
 
 	private void updatePlayerTurn() {
-		if (this.playerTurn.handEmpty()) {
+		if (this.playerTurn.handEmpty() || this.market.isEmpty() && tenderEnabled)
 			this.gameOver();
-			return;
+		else if (!tenderEnabled)
+			this.resetDeck();
+		else {
+			++this.playerTurnIndex;
+			this.roundCount++;
+			if (this.playerTurnIndex >= this.players.size()) {
+				this.playerTurnIndex = 0;
+			}
+			this.playerTurn = this.players.get(playerTurnIndex);
 		}
-		++this.playerTurnIndex;
-		this.roundCount++;
-		if (this.playerTurnIndex >= this.players.size()) {
-			this.playerTurnIndex = 0;
-		}
-		this.playerTurn = this.players.get(playerTurnIndex);
 	}
 
 	public String toString() {
 		ArrayList<WhotPlayer> players_copy = new ArrayList<>(this.players);
-		players_copy.sort(new SortPlayersByScore().reversed());
+		players_copy.sort(Comparator.comparingInt(WhotPlayer::getPlayerScore).reversed());
 		StringBuilder scoreBoard = new StringBuilder(String.format("%-18s %2$s\n", "Player Name", "Score"));
 		for (WhotPlayer player : players_copy) {
 			String name = player.getName();
@@ -136,8 +142,7 @@ public class WhotGame {
 	}
 
 	private void printScoreBoard() {
-		System.out.println(this.toString());
-
+		System.out.println(toString());
 	}
 
 	private Card[] validatePlay(Card[] cards) {
@@ -156,7 +161,7 @@ public class WhotGame {
 				return null;
 		int count = 0;
 		for (Card card : cards) {
-			if (Card.compareCardsByNumber(previousCard, card) || (count == 0 && Card.compareCardsByShape(previousCard, card))) {//fixme: ??
+			if (Card.compareCardsByNumber(previousCard, card) || (count == 0 && Card.compareCardsByShape(previousCard, card))) {
 				previousCard = cards[count++];
 				continue;
 			}
@@ -164,13 +169,6 @@ public class WhotGame {
 		}
 
 		return null;
-	}
-
-	private Card[] validate(int[] cardIndices) {
-		Card[] cards = new Card[cardIndices.length];
-		for (int i = 0; i < cards.length; ++i)
-			cards[i] = this.playerTurn.hand.viewCardAt(cardIndices[i]);
-		return this.validatePlay(cards);
 	}
 
 	private void processPlay() {
@@ -184,10 +182,10 @@ public class WhotGame {
 		if (pickTwo > 0)
 			message.append("\nYou have been asked to pick ").append(pickTwo).append(". Enter m to yield or card index to defend(Value must be 2 or WHOT)");
 		while (true) {
-			int[] playerMove = this.playerTurn.playAsHuman(this.topCard, this.market.getHandSize(), message.toString());
+			Card[] cardToPlay = this.playerTurn.playAsHuman(this.topCard, this.market.getHandSize(), message.toString());
 			if (Tester.testing)
-				System.out.println(Arrays.toString(playerMove));//todo: testing
-			if (playerMove[0] == -1) {
+				System.out.println(Arrays.toString(cardToPlay));//todo: testing
+			if (cardToPlay[0] == null) {
 				if (pickTwo == 0) {
 					System.out.println(this.playerTurn.getName() + " goes to market.");
 					this.dealCurrentPlayerCard(1);
@@ -196,25 +194,20 @@ public class WhotGame {
 					this.dealCurrentPlayerCard(pickTwo);
 					pickTwo = 0;
 				}
-				System.out.println();
+				System.out.println(); //mark: Newline
 				return;
 			} else {
-				Card[] process = this.validate(playerMove);
+				Card[] process = this.validatePlay(cardToPlay);
 				if (process == null) {
-					Card playCard = null;
-					int index = 0;
-					for (int i = 0; i < playerMove.length; i++) {
-//						if (i != 0 && playerMove[i] < playerMove[i - 1])
-//							index = playerMove[i] - i;
-						playCard = this.playerTurn.dealCard(playerMove[index]);
-						this.addCardToDeckFromPlayer(playCard);
-					}
-					if (pickTwo > 0 && playCard.getValue() != 2 && playCard.getValue() != 20) {
+					this.addCardsToDeckFromPlayer();
+					int cardValue = cardToPlay[0].getValue();
+
+					if (pickTwo > 0 && cardValue != 2 && cardValue != 20) {
 						message.delete(0, message.length());
-						message = new StringBuilder(String.format("You can't block a pick to with a %s", playCard));
+						message = new StringBuilder(String.format("You can't block a pick to with a %s", cardValue));
 						continue;
 					}
-					switch (playCard.getValue()) {
+					switch (cardValue) {
 						case 3:
 						case 4:
 						case 5:
@@ -231,10 +224,10 @@ public class WhotGame {
 							message = new StringBuilder("Play your continue...");
 							continue;
 						case 2:
-							pickTwo += 2 * playerMove.length;
+							pickTwo += 2 * cardToPlay.length;
 							return;
 						case 8:
-							for (int i = 0; i < playerMove.length - 1; ++i) {
+							for (int i = 0; i < cardToPlay.length - 1; ++i) {
 								this.updatePlayerTurn();
 								System.out.printf("%s suspension!!!", this.playerTurn.getName());
 							}
@@ -242,7 +235,7 @@ public class WhotGame {
 							message = new StringBuilder("Play your continue");
 							continue;
 						case 14:
-							for (int i = 0; i < playerMove.length; i++) {
+							for (int i = 0; i < cardToPlay.length; i++) {
 								System.out.println("General Market everyone!!!");
 								this.generalMarket();
 							}
@@ -255,7 +248,7 @@ public class WhotGame {
 							System.out.println("What do you need...");
 							System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 							char input = Character.toLowerCase(TextIO.getlnChar());
-							while (!(input == 'b' || input == 'c' || input == 'r' || input == 's' || input == 't' || input == '1' || input == '2' || input == '3' || input == '4' || input == '5')) {
+							while (input != 'b' && input != 'c' && input != 'r' && input != 's' && input != 't' && input != '1' && input != '2' && input != '3' && input != '4' && input != '5') {
 								System.out.println("Wrong input let's try that again.");
 								System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 								input = Character.toLowerCase(TextIO.getlnChar());
@@ -304,9 +297,51 @@ public class WhotGame {
 		}
 	}
 
-	void gameOver() {
-		System.out.println("Haha the game is over");
-		System.exit(0);
+	private void resetGame() {
+		//todo; implement this later
+	}
+
+	private void gameOver() {
+		ArrayList<WhotPlayer> playersCopy = new ArrayList<>(this.players);
+		if (tenderEnabled) {
+			System.out.println("GAME OVER, TENDER!!!");
+			playersCopy.sort(Comparator.comparingInt(WhotPlayer::getPlayerCardWeight));
+			int lastWeight = playersCopy.get(0).getPlayerCardWeight();
+			int position = 0;
+			boolean draw = false;
+			for (WhotPlayer player : playersCopy) {
+				if (player.getPlayerCardWeight() != lastWeight) {
+					draw = false;
+					position++;
+				} else {
+					if (position != 0)
+						draw = true;
+				}
+				if (position == 0)
+					position++;
+				lastWeight = player.getPlayerCardWeight();
+				String positionString = position == 1 ? "1st" : position == 2 ? "2nd" : position == 3 ? "3rd" : position + "th";
+				int score = this.players.size() - position + 1;//So that players.size() - 1st + 1 ==  players.size
+				player.updatePlayerScore(score);
+				if (!draw)
+					System.out.printf("%s comes in at %s position.\n", player.getName(), positionString);
+				else
+					System.out.printf("%s comes draws at %s position.\n", player.getName(), positionString);
+
+			}
+
+		} else {
+			System.out.printf("%s wins this round.\n", this.playerTurn.getName());
+			this.playerTurn.updatePlayerScore(4);
+
+		}
+		this.printScoreBoard();
+		System.out.print("Would you like to play a new game(y/n): ");
+		String response = TextIO.getWord();
+		if (response.equalsIgnoreCase("n"))
+			System.exit(0);
+		else
+			this.resetGame();
 	}
 
 	void startGame() {
@@ -316,10 +351,4 @@ public class WhotGame {
 		}
 	}
 
-	static class SortPlayersByScore implements Comparator<WhotPlayer> {
-		@Override
-		public int compare(WhotPlayer player1, WhotPlayer player2) {
-			return player1.getPlayerScore() - player2.getPlayerScore();
-		}
-	}
 }

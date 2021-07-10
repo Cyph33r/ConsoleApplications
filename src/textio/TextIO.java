@@ -647,7 +647,7 @@ public class TextIO {
 	 * In other cases, an IllegalArgumentException will be thrown if an end-of-file is encountered.
 	 */
 	public static String getln() {
-		StringBuffer s = new StringBuffer(100);
+		StringBuilder s = new StringBuilder(100);
 		char ch = readChar();
 		while (ch != '\n') {
 			s.append(ch);
@@ -782,7 +782,7 @@ public class TextIO {
 	 */
 	public static String getWord() {
 		skipWhitespace();
-		StringBuffer str = new StringBuffer(50);
+		StringBuilder str = new StringBuilder(50);
 		char ch = lookChar();
 		while (ch == EOF || !Character.isWhitespace(ch)) {
 			str.append(readChar());

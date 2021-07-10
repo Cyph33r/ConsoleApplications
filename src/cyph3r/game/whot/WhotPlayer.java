@@ -5,38 +5,33 @@ import textio.TextIO;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class WhotPlayer {
+
+//todo: try to add players names in front of error prompts
+class WhotPlayer {
 	Hand hand;
 	private String name;
 	private int score = 0;
+	private Hand outgoingCards = new Hand();
 
 	WhotPlayer(String name) {
-		if (name != null)
-			this.name = name;
-		else
+		if (name == null)
 			throw new IllegalArgumentException("Name can not be null");
+		this.name = name;
 		this.hand = new Hand();
 	}
 
-	public WhotPlayer(String name, Card[] hand) {
-		if (name != null)
-			this.name = name;
-		else
-			throw new IllegalArgumentException("Name can not be null");
-		this.hand = new Hand(hand);
-	}
 
 	@Override
 	public String toString() {
 		return this.getName();
 	}
 
-	public String getName() {
+	String getName() {
 		return this.name;
 	}
 
 
-	public int getPlayerScore() {
+	int getPlayerScore() {
 		return this.score;
 	}
 
@@ -44,39 +39,35 @@ public class WhotPlayer {
 		this.score += points;
 	}
 
-	public void receiveCard(Card card) {
+	void receiveCard(Card card) {
 		this.hand.receiveCard(card);
 	}
 
-	public Card dealCard() {
-		return this.hand.playCard();
+	Card[] flushOutgoingCards() {
+		Card[] toReturn = new Card[this.outgoingCards.getHandSize()];
+		for (int i = 0; i < this.outgoingCards.getHandSize(); ++i)
+			toReturn[i] = this.hand.dealCard(this.outgoingCards.dealCard(i));
+		return toReturn;
 	}
 
-	public Card dealCard(int ordinal) {
-		return this.hand.playCard(ordinal);
-	}
-
-	public Card[] dealCards(int... indices) {
-		return this.hand.playCards(indices);
-	}
-
-	int[] playAsHuman(Card onDeck, int numOfCardsInMarket, String message) {
+	Card[] playAsHuman(Card onDeck, int numOfCardsInMarket, String message) {
 		HashSet<Integer> toCheck = new HashSet<>();
 		ArrayList<Integer> indexToReturn = new ArrayList<>();
-		boolean exit = false;
 		this.hand.shuffleHand();
 		System.out.println(this.hand);
 		System.out.println();
 		System.out.println(message);
 		first:
-		while (!exit) {
+		while (true) {
 			System.out.println("Card on deck: " + onDeck);
 			System.out.println("Cards left in market: " + numOfCardsInMarket);
 			System.out.print(
 					"Enter 'm' to go to market or the card number or numbers separated by a space to play. Your move: ");
 			String move = TextIO.getlnString().trim();
-			if (move.equalsIgnoreCase("m") || move.equals("0"))
-				return new int[]{-1};
+			if (move.equalsIgnoreCase("m") || move.equals("0")) {
+				this.outgoingCards.clearCards();
+				return new Card[1];
+			}
 			toCheck.clear();
 			indexToReturn.clear();
 			String[] move_split = move.split(" ");
@@ -109,7 +100,6 @@ public class WhotPlayer {
 								"Ensure your index(ces) is/are in range of (1 - " + this.hand.getHandSize() + ").\n");
 						continue first;
 					}
-
 				} catch (NumberFormatException e) {
 					System.out.println();
 					System.out.println(this.hand);
@@ -124,23 +114,27 @@ public class WhotPlayer {
 				}
 				indexToReturn.add(Integer.parseInt(index) - 1);
 			}
-			exit = true;
+			break;
 		}
-		return indexToReturn.stream().mapToInt(Integer::intValue).toArray();
+		this.outgoingCards.clearCards();
+		Card[] outgoing = indexToReturn.stream().map((a) -> this.hand.peek(a)).toArray(Card[]::new);
+		this.outgoingCards.receiveCards(outgoing);
+		return outgoing;
 	}
 
-	public Object[] playAsComputer(Card onDeck, int numOfPlayers, int numOfCardsInMarket, boolean isTenderEnabled) {
-		return new Object[]{};
+	public Card[] playAsComputer(Card onDeck, int numOfPlayers, int numOfCardsInMarket, boolean isTenderEnabled) {
+		return new Card[0];
 	}
 
 	public String getPlayerHand() {
 		return this.hand.toString();
 	}
 
-	public boolean handEmpty() {
+	boolean handEmpty() {
 		return this.hand.isEmpty();
 	}
-	public int getPlayerCardWeight() {
+
+	int getPlayerCardWeight() {
 		return this.hand.getCardWeight();
 	}
 

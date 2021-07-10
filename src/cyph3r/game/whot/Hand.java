@@ -4,56 +4,55 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
-public class Hand {
+class Hand {
 	private ArrayList<Card> hand = new ArrayList<>();
 	private int cardWeight = 0;
 
-	public Hand() {
+	Hand() {
 
 	}
 
-	public Hand(Card card) {
+	Hand(Card card) {
 
 		receiveCard(card);
 	}
 
-	public Hand(Card[] cards) {
+	Hand(Card[] cards) {
 		for (Card card : cards) {
 			receiveCard(card);
 		}
 	}
 
-	public int getHandSize() {
+	int getHandSize() {
 		return this.hand.size();
 	}
 
-	public void flushCards() {
+	void clearCards() {
 		this.hand.clear();
 	}
 
-	public boolean isEmpty() {
+	boolean isEmpty() {
 		return this.getHandSize() == 0;
 	}
 
-	public int getCardWeight() {
+	int getCardWeight() {
 		return this.cardWeight;
 	}
 
-	public Card playCard() {
+	Card dealCard() {
 		Card toRemove = this.hand.remove(this.hand.size() - 1);
 		this.cardWeight -= toRemove.getValue();
 		return toRemove;
-
 	}
 
-	public Card[] playCards(int... indices) {
+	Card[] dealCards(int... indices) {
 		Card[] toReturn = new Card[indices.length];
 		for (int i = 0; i < indices.length; ++i)
-			toReturn[i] = playCard(indices[i]);
+			toReturn[i] = dealCard(indices[i]);
 		return toReturn;
 	}
 
-	public Card[] playCards(int start, int end) {
+	Card[] dealCards(int start, int end) {
 		if (this.isEmpty())
 			return new Card[]{};
 		if (start < 0 || end > this.getHandSize())
@@ -61,22 +60,36 @@ public class Hand {
 		return this.hand.subList(start, end).toArray(new Card[]{});
 	}
 
-	public Card playCard(int ordinal) {
+	Card dealCard(int ordinal) {
 		Card toRemove = this.hand.remove(ordinal);
 		this.cardWeight -= toRemove.getValue();
 		return toRemove;
 	}
 
-	public void receiveCard(Card card) {
+	Card dealCard(Card card) {
+		return this.dealCards(new Card[]{card})[0];
+	}
+
+	Card[] dealCards(Card[] cards) {
+		Card[] toReturn = new Card[cards.length];
+		int count = 0;
+		for (Card card : cards) {
+			int cardIndex = this.hand.indexOf(card);
+			if (cardIndex == -1) continue;
+			toReturn[count] = this.hand.remove(cardIndex);
+		}
+		return toReturn;
+	}
+
+	void receiveCard(Card card) {
 		this.cardWeight += card.getValue();
 		this.hand.add(card);
 	}
 
 
-	public void receiveCards(Card[] cards) {
-		for (Card card : cards) {
+	void receiveCards(Card[] cards) {
+		for (Card card : cards)
 			this.receiveCard(card);
-		}
 	}
 
 	public String toString() {
@@ -97,23 +110,28 @@ public class Hand {
 		return this.hand.toString();
 	}
 
-	public Card[] getHandAsArray() {
+	Card[] getHandAsArray() {
 		return this.hand.toArray(new Card[0]);
 	}
 
-	public Card viewCardAt(int index) {
-		return this.hand.get(index);
+	Card peek(int index) {
+		try {
+			return this.hand.get(index);
+		} catch (IndexOutOfBoundsException e) {
+			return null;
+		}
 	}
 
-	public void sortByValue() {
+
+	void sortByValue() {
 		this.hand.sort(new SortCardByValue());
 	}
 
-	public void sortByShape() {
+	void sortByShape() {
 		this.hand.sort(new SortCardByShape());
 	}
 
-	public void shuffleHand() {
+	void shuffleHand() {
 		Collections.shuffle(this.hand);
 	}
 
