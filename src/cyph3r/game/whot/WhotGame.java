@@ -7,33 +7,31 @@ import textio.TextIO;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 
 //todo: Clean up all output.
-//todo: Add last and semi card message
-//fixme: Fix the multi-carding functionality.
-//todo: add playerTurn variable as an int containing last card value
-//todo: add contains method in Hand class
+//todo: Add welcome message
+//todo: Add end game message
+//TODO: FIX SUSPENSION METHOD
+//todo: print card weights during tender
 
 class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
+	private final int initCardNum;
 	private final boolean tenderEnabled;
-	private int pickTwo = 0;
-	private Hand market = new Hand();
-	private Hand deck = new Hand();
-	private Card topCard;
+	private final int numOfPacks;
+	private ArrayList<Object> iNeed = new ArrayList<>();
 	private WhotPlayer playerTurn;
+	private Hand deck = new Hand();
+	private Hand market = new Hand();
+	private Card topCard;
 	private int playerTurnIndex = 0;
 	private int roundCount = 0;
-	private final int numOfPacks;
-	private ArrayList<Object> iNeed;
-	private HashMap<String, Object> ineed;//mark: can I use this instead an ArrayList???
+	private int pickTwo = 0;
+	private int gamesPlayed; //todo: Do something with this later
+	//private HashMap<String, Object> iNeed; //mark: can I use this instead an ArrayList???
 
 
 	WhotGame(int playerNum, int initCardNum, int numOfPacks, boolean tenderEnabled) {
-		String welcomeMsg = ""; //todo: Fill in the game intro later
-		String loadingCompleteMsg = ""; //todo: Fill this in later too
-		System.out.println(welcomeMsg);
 		if (numOfPacks <= 0 || (playerNum * initCardNum > (int) (0.75 * numOfPacks * 75))) // Ensures that the number of
 			// cards to be distributed is not more than 75% of the total cards available
 			throw new IllegalArgumentException("Not enough cards in market to share");
@@ -41,41 +39,65 @@ class WhotGame {
 			throw new IllegalArgumentException("You are not allowed use more than 4 packs for a game");
 		if (playerNum < 2)
 			throw new IllegalArgumentException("Not enough players to start a game");
+		String welcomeMsg = ""; //todo: Fill in the game intro later
+		String loadingCompleteMsg = ""; //todo: Fill this in later too
+		System.out.println(welcomeMsg);
 		this.tenderEnabled = tenderEnabled;
-		iNeed = new ArrayList<>();
 		this.numOfPacks = numOfPacks;
-		this.populateMarket();
+		this.initCardNum = initCardNum;
 		for (int i = 0; i < playerNum; ++i) {
 			System.out.print("Player " + (i + 1) + " enter your name: ");
 			String name = TextIO.getlnWord();
 			this.players.add(new WhotPlayer(StringUtil.toTitleCase(name)));
-
-			for (int j = 0; j < initCardNum; ++j)
-				dealPlayerCard(this.players.get(i), 1);
 		}
-		this.playerTurn = this.players.get(0);
+		this.resetMarket();
+		this.init();
 		System.out.println(loadingCompleteMsg);
 	}
 
-	private void populateMarket() {
+	private void init() {
+		this.iNeed.clear();
+		for (WhotPlayer player : this.players) {
+			player.clearCards();
+			this.dealPlayerCard(player, this.initCardNum);
+		}
+		this.playerTurnIndex = 0;
+		this.playerTurn = this.players.get(this.playerTurnIndex);
+	}
+
+	private void resetMarket() {
+		this.market.clearCards();
 		for (int packNumber = 0; packNumber < numOfPacks; ++packNumber) {
 			for (shape theShape : Card.shape.values()) {
 				if (theShape == shape.WHOT)
 					continue;
-				for (int cardValue = 1; cardValue <= 14; ++cardValue) {
-					this.market.receiveCard(new Card(theShape, cardValue));
-				}
+				for (int i = 0; i < 3; i++)
+					for (int cardValue = 1; cardValue <= 8; ++cardValue)
+						this.market.receiveCard(new Card(theShape, cardValue));
 			}
 			for (int whotNumber = 0; whotNumber < 5; ++whotNumber)
 				this.market.receiveCard(new Card());
 		}
-		for (int i = 0; i < 2; ++i)
-			this.market.shuffleHand();
+		this.market.shuffleHand();
+		this.deck.clearCards();
 		this.addCardToDeckFromMarket();
 	}
 
 	private void dealCurrentPlayerCard(int times) {
 		this.dealPlayerCard(this.playerTurn, times);
+	}
+
+	private void addCardsToDeckFromPlayer() {
+		this.deck.receiveCards(this.playerTurn.flushOutgoingCards());
+		this.topCard = deck.peek(this.deck.getHandSize() - 1);
+		switch (this.playerTurn.getNumOfCardsInHand()) {
+			case 1:
+				System.out.printf("%s says last card!\n", this.playerTurn);
+				break;
+			case 2:
+				System.out.printf("%s says \"semi last card!\"\n", this.playerTurn);
+				break;
+		}
 	}
 
 	private void dealPlayerCard(WhotPlayer player, int times) {
@@ -90,18 +112,14 @@ class WhotGame {
 	}
 
 	private void resetDeck() {//todo: ensure this works as is supposed to
-		Card[] underDeck = this.deck.dealCards(0, this.deck.getHandSize() - 2);
-		if (underDeck.length == 0) {
+		if (this.deck.getHandSize() < 3) {
 			System.out.println("There are no more cards left in the market.");
 			gameOver();
+		} else {
+			Card[] underDeck = this.deck.dealCards(0, this.deck.getHandSize() - 2);
+			this.market.receiveCards(underDeck);
+			this.market.shuffleHand();
 		}
-		this.market.receiveCards(underDeck);
-		this.market.shuffleHand();
-	}
-
-	private void addCardsToDeckFromPlayer() {
-		this.deck.receiveCards(this.playerTurn.flushOutgoingCards());
-		this.topCard = deck.peek(this.deck.getHandSize() - 1);
 	}
 
 	private void generalMarket() {
@@ -116,17 +134,16 @@ class WhotGame {
 	private void updatePlayerTurn() {
 		if (this.playerTurn.handEmpty() || this.market.isEmpty() && tenderEnabled)
 			this.gameOver();
-		else if (!tenderEnabled)
+		if (this.market.isEmpty())
 			this.resetDeck();
-		else {
-			++this.playerTurnIndex;
-			this.roundCount++;
-			if (this.playerTurnIndex >= this.players.size()) {
-				this.playerTurnIndex = 0;
-			}
-			this.playerTurn = this.players.get(playerTurnIndex);
+		this.playerTurnIndex++;
+		this.roundCount++;
+		if (this.playerTurnIndex >= this.players.size()) {
+			this.playerTurnIndex = 0;
 		}
+		this.playerTurn = this.players.get(playerTurnIndex);
 	}
+
 
 	public String toString() {
 		ArrayList<WhotPlayer> players_copy = new ArrayList<>(this.players);
@@ -227,12 +244,12 @@ class WhotGame {
 							pickTwo += 2 * cardToPlay.length;
 							return;
 						case 8:
-							for (int i = 0; i < cardToPlay.length - 1; ++i) {
-								this.updatePlayerTurn();
-								System.out.printf("%s suspension!!!", this.playerTurn.getName());
-							}
 							message.delete(0, message.length());
 							message = new StringBuilder("Play your continue");
+							for (int i = 0; i < cardToPlay.length; ++i) {
+								this.updatePlayerTurn();
+								System.out.printf("%s suspension!!!\n", this.playerTurn.getName());
+							}
 							continue;
 						case 14:
 							for (int i = 0; i < cardToPlay.length; i++) {
@@ -244,7 +261,7 @@ class WhotGame {
 							continue;
 						case 20:
 							System.out.println("Your cards are:");
-							System.out.println(this.playerTurn.hand);
+							System.out.println(this.playerTurn.getPlayerHand());
 							System.out.println("What do you need...");
 							System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 							char input = Character.toLowerCase(TextIO.getlnChar());
@@ -298,12 +315,13 @@ class WhotGame {
 	}
 
 	private void resetGame() {
-		//todo; implement this later
+		this.resetMarket();
+		this.init();
 	}
 
 	private void gameOver() {
 		ArrayList<WhotPlayer> playersCopy = new ArrayList<>(this.players);
-		if (tenderEnabled) {
+		if (tenderEnabled || this.market.getHandSize() == 0) {
 			System.out.println("GAME OVER, TENDER!!!");
 			playersCopy.sort(Comparator.comparingInt(WhotPlayer::getPlayerCardWeight));
 			int lastWeight = playersCopy.get(0).getPlayerCardWeight();
@@ -336,8 +354,8 @@ class WhotGame {
 
 		}
 		this.printScoreBoard();
-		System.out.print("Would you like to play a new game(y/n): ");
-		String response = TextIO.getWord();
+		System.out.print("Would you like to play another round (y/n): ");
+		String response = TextIO.getlnWord();
 		if (response.equalsIgnoreCase("n"))
 			System.exit(0);
 		else

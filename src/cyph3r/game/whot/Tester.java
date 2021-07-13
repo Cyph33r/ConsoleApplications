@@ -7,7 +7,7 @@ public class Tester {
 	static boolean testing = false;
 
 	public static void main(String[] args) {
-		WhotGame whot = new WhotGame(3, 5, 1, true);
+		WhotGame whot = new WhotGame(3, 5, 1, false);
 //		System.out.println(whot);
 		whot.startGame();
 

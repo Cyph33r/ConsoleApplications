@@ -8,7 +8,7 @@ import java.util.HashSet;
 
 //todo: try to add players names in front of error prompts
 class WhotPlayer {
-	Hand hand;
+	private Hand hand;
 	private String name;
 	private int score = 0;
 	private Hand outgoingCards = new Hand();
@@ -30,12 +30,14 @@ class WhotPlayer {
 		return this.name;
 	}
 
-
+	int getNumOfCardsInHand() {
+		return this.hand.getHandSize();
+	}
 	int getPlayerScore() {
 		return this.score;
 	}
 
-	public void updatePlayerScore(int points) {
+	void updatePlayerScore(int points) {
 		this.score += points;
 	}
 
@@ -48,6 +50,10 @@ class WhotPlayer {
 		for (int i = 0; i < this.outgoingCards.getHandSize(); ++i)
 			toReturn[i] = this.hand.dealCard(this.outgoingCards.dealCard(i));
 		return toReturn;
+	}
+
+	void clearCards() {
+		this.hand.clearCards();
 	}
 
 	Card[] playAsHuman(Card onDeck, int numOfCardsInMarket, String message) {
@@ -126,7 +132,7 @@ class WhotPlayer {
 		return new Card[0];
 	}
 
-	public String getPlayerHand() {
+	String getPlayerHand() {
 		return this.hand.toString();
 	}
 

@@ -56,7 +56,7 @@ class Hand {
 		if (this.isEmpty())
 			return new Card[]{};
 		if (start < 0 || end > this.getHandSize())
-			throw new IllegalArgumentException("Hand is greater than or lass than inputted range");
+			throw new IllegalArgumentException("Hand is greater than or less than inputted range");
 		return this.hand.subList(start, end).toArray(new Card[]{});
 	}
 
