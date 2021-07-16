@@ -11,8 +11,8 @@ import java.util.Comparator;
 //todo: Clean up all output.
 //todo: Add welcome message
 //todo: Add end game message
-//TODO: FIX SUSPENSION METHOD
 //todo: print card weights during tender
+//todo: add player name to pick two
 
 class WhotGame {
 	private final ArrayList<WhotPlayer> players = new ArrayList<>();
@@ -20,13 +20,13 @@ class WhotGame {
 	private final boolean tenderEnabled;
 	private final int numOfPacks;
 	private ArrayList<Object> iNeed = new ArrayList<>();
+	private ArrayList<Object> pickTwo = new ArrayList<>();
 	private WhotPlayer playerTurn;
 	private Hand deck = new Hand();
 	private Hand market = new Hand();
 	private Card topCard;
 	private int playerTurnIndex = 0;
 	private int roundCount = 0;
-	private int pickTwo = 0;
 	private int gamesPlayed; //todo: Do something with this later
 	//private HashMap<String, Object> iNeed; //mark: can I use this instead an ArrayList???
 
@@ -51,12 +51,15 @@ class WhotGame {
 			this.players.add(new WhotPlayer(StringUtil.toTitleCase(name)));
 		}
 		this.resetMarket();
-		this.init();
+		this.initGame();
 		System.out.println(loadingCompleteMsg);
 	}
 
-	private void init() {
+	private void initGame() {
 		this.iNeed.clear();
+		this.pickTwo.clear();
+		pickTwo.add(null);
+		pickTwo.add(null);
 		for (WhotPlayer player : this.players) {
 			player.clearCards();
 			this.dealPlayerCard(player, this.initCardNum);
@@ -71,12 +74,11 @@ class WhotGame {
 			for (shape theShape : Card.shape.values()) {
 				if (theShape == shape.WHOT)
 					continue;
-				for (int i = 0; i < 3; i++)
-					for (int cardValue = 1; cardValue <= 8; ++cardValue)
-						this.market.receiveCard(new Card(theShape, cardValue));
+				for (int cardValue = 1; cardValue <= 14; ++cardValue)
+					this.market.receiveCard(new Card(theShape, cardValue));//Add regular cards
 			}
 			for (int whotNumber = 0; whotNumber < 5; ++whotNumber)
-				this.market.receiveCard(new Card());
+				this.market.receiveCard(new Card());//Add Whot cards
 		}
 		this.market.shuffleHand();
 		this.deck.clearCards();
@@ -165,7 +167,7 @@ class WhotGame {
 	private Card[] validatePlay(Card[] cards) {
 		Card previousCard = this.topCard;
 		if (cards[0].getShape() == shape.WHOT || (this.topCard.getShape() == shape.WHOT && this.roundCount == 0)) {
-			this.pickTwo = 0;
+			this.pickTwo.set(1, 0);
 			return null;
 		} else if (iNeed.size() > 0)
 			if (cards[0].getShape() == iNeed.get(1)) {
@@ -173,7 +175,7 @@ class WhotGame {
 				return null;
 			} else
 				return new Card[]{cards[0], null};
-		else if (cards.length == 1 && pickTwo == 0)
+		else if (cards.length == 1 && pickTwo.get(1) == null)
 			if (Card.compareCardsByShape(cards[0], this.topCard))
 				return null;
 		int count = 0;
@@ -196,20 +198,21 @@ class WhotGame {
 			StringBuilder name = this.playerTurn == iNeed.get(0) ? new StringBuilder("You needed ") : new StringBuilder(iNeed.get(0).toString() + " needs ");
 			message.append(name.append(this.iNeed.get(1)).toString());
 		}
-		if (pickTwo > 0)
-			message.append("\nYou have been asked to pick ").append(pickTwo).append(". Enter m to yield or card index to defend(Value must be 2 or WHOT)");
+		if (pickTwo.get(1) != null)
+			message.append("\n").append(this.pickTwo.get(0)).append(" asked you to pick ").append(pickTwo.get(1)).append(". Enter m to yield or card index to defend(Value must be 2 or WHOT)");
 		while (true) {
 			Card[] cardToPlay = this.playerTurn.playAsHuman(this.topCard, this.market.getHandSize(), message.toString());
 			if (Tester.testing)
-				System.out.println(Arrays.toString(cardToPlay));//todo: testing
+				System.out.println(Arrays.toString(cardToPlay) + " from processPlay");//todo: testing
 			if (cardToPlay[0] == null) {
-				if (pickTwo == 0) {
+				if (pickTwo.get(1) == null) {
 					System.out.println(this.playerTurn.getName() + " goes to market.");
 					this.dealCurrentPlayerCard(1);
 				} else {
-					System.out.printf("%s picks %s\n", this.playerTurn.getName(), this.pickTwo);
-					this.dealCurrentPlayerCard(pickTwo);
-					pickTwo = 0;
+					System.out.printf("%s picks %s\n", this.playerTurn.getName(), this.pickTwo.get(1));
+					this.dealCurrentPlayerCard((int) (pickTwo.get(1)));
+					pickTwo.set(0, null);
+					pickTwo.set(1, null);
 				}
 				System.out.println(); //mark: Newline
 				return;
@@ -219,7 +222,7 @@ class WhotGame {
 					this.addCardsToDeckFromPlayer();
 					int cardValue = cardToPlay[0].getValue();
 
-					if (pickTwo > 0 && cardValue != 2 && cardValue != 20) {
+					if (pickTwo.get(1) != null && cardValue != 2 && cardValue != 20) {
 						message.delete(0, message.length());
 						message = new StringBuilder(String.format("You can't block a pick to with a %s", cardValue));
 						continue;
@@ -241,7 +244,11 @@ class WhotGame {
 							message = new StringBuilder("Play your continue...");
 							continue;
 						case 2:
-							pickTwo += 2 * cardToPlay.length;
+							this.pickTwo.set(0, this.playerTurn.getName());
+							if (this.pickTwo.get(1) == null)
+								this.pickTwo.set(1, cardToPlay.length * 2);
+							else
+								this.pickTwo.set(1, ((int) this.pickTwo.get(1)) + cardToPlay.length * 2);
 							return;
 						case 8:
 							message.delete(0, message.length());
@@ -269,6 +276,10 @@ class WhotGame {
 								System.out.println("Wrong input let's try that again.");
 								System.out.print("Box - b\nCircle - c\nCross - r\nStar - s\nTriangle - t\nEnter your response: ");
 								input = Character.toLowerCase(TextIO.getlnChar());
+							}
+							if (this.pickTwo.get(1) != null) {
+								this.pickTwo.set(0, null);
+								this.pickTwo.set(1, null);
 							}
 							switch (input) {
 								case '1':
@@ -316,13 +327,15 @@ class WhotGame {
 
 	private void resetGame() {
 		this.resetMarket();
-		this.init();
+		this.initGame();
 	}
 
 	private void gameOver() {
 		ArrayList<WhotPlayer> playersCopy = new ArrayList<>(this.players);
 		if (tenderEnabled || this.market.getHandSize() == 0) {
 			System.out.println("GAME OVER, TENDER!!!");
+			for (WhotPlayer player : players)
+				System.out.printf("%s has a card weight of %s\n", player.getName(), player.getPlayerCardWeight());
 			playersCopy.sort(Comparator.comparingInt(WhotPlayer::getPlayerCardWeight));
 			int lastWeight = playersCopy.get(0).getPlayerCardWeight();
 			int position = 0;

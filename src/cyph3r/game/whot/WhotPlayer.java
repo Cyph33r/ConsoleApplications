@@ -46,10 +46,7 @@ class WhotPlayer {
 	}
 
 	Card[] flushOutgoingCards() {
-		Card[] toReturn = new Card[this.outgoingCards.getHandSize()];
-		for (int i = 0; i < this.outgoingCards.getHandSize(); ++i)
-			toReturn[i] = this.hand.dealCard(this.outgoingCards.dealCard(i));
-		return toReturn;
+		return this.hand.dealCards(this.outgoingCards.toArray());
 	}
 
 	void clearCards() {
@@ -76,7 +73,7 @@ class WhotPlayer {
 			}
 			toCheck.clear();
 			indexToReturn.clear();
-			String[] move_split = move.split(" ");
+			String[] move_split = move.trim().split("\\s++");
 			int index_int;
 			for (String index : move_split) {
 				try {

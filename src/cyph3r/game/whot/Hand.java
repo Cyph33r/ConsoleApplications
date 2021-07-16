@@ -76,7 +76,7 @@ class Hand {
 		for (Card card : cards) {
 			int cardIndex = this.hand.indexOf(card);
 			if (cardIndex == -1) continue;
-			toReturn[count] = this.hand.remove(cardIndex);
+			toReturn[count++] = this.hand.remove(cardIndex);
 		}
 		return toReturn;
 	}
@@ -88,11 +88,14 @@ class Hand {
 
 
 	void receiveCards(Card[] cards) {
+
 		for (Card card : cards)
 			this.receiveCard(card);
 	}
 
 	public String toString() {
+		if (this.hand.isEmpty())
+			return "";
 		StringBuilder toReturn = new StringBuilder();
 		Card[] cards = this.getHandAsArray();
 		for (int i = 1; i < cards.length + 1; i++) {
@@ -100,14 +103,15 @@ class Hand {
 			if (i % 2 == 0 && i != cards.length)
 				toReturn.append("\n");
 		}
-		// if (cards.length % 2 == 1)
-		// toReturn.append("\n");
-
 		return toReturn.toString();
 	}
 
-	public String getHandAsString() {
-		return this.hand.toString();
+	public void printHand() {
+		System.out.println(this.toString());
+	}
+
+	public Card[] toArray() {
+		return this.hand.toArray(new Card[this.hand.size()]);
 	}
 
 	Card[] getHandAsArray() {
